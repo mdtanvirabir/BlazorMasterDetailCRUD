@@ -1,0 +1,97 @@
+﻿@page "/students"
+@using BlazorEvidence.Shared;
+@inject HttpClient http
+@inject IJSRuntime jsRuntime
+@inject NavigationManager manager
+
+<h3>Student Details</h3>
+
+<div class="form-group">
+    <a class="btn btn-outline-success btn-sm" href="students/create">Add New Student</a>
+</div>
+@if (students == null)
+{
+    <div>Please wait a moment.....</div>
+}
+else if (students.Count == 0)
+{
+    <text>There is no Student record.... </text>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+
+                <th>Id</th>
+                <th>Photo</th>
+                <th>Name</th>
+                <th>Admission Date</th>
+                <th>Active</th>
+                <th>Module Details</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in students)
+            {
+                <tr>
+
+                    <td>@student.Id</td>
+                    <td><img height="80px" width="80px" src="@student.ImageUrl" /></td>
+                    <td>@student.Name</td>
+                    <td>@student.AdmissionDate</td>
+                    <td>@student.IsActive</td>
+                    <td>
+                        @if (student.Modules.Count > 0)
+                        {
+                            @foreach (var modules in student.Modules)
+                            {
+                                <div>
+                                    <strong>Module Name:</strong> @modules.ModuleName<br />
+                                    <strong>Obtained Mark:</strong> @modules.ObtainedMark
+                                </div>
+                                <br />
+                            }
+                        }
+                        else
+                        {
+                            <div>Not complete any modules</div>
+                        }
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-info" href="students/edit/@student.Id">Edit</a>|
+                        <button class="btn btn-sm btn-outline-danger" @onclick="async () => await Delete(student)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+@code {
+    List<Student> students { get; set; }
+    protected async override Task OnInitializedAsync()
+    {
+        students = await http.GetFromJsonAsync<List<Student>>("api/students");
+    }
+
+    private async Task Delete(Student student)
+    {
+        bool confirmed = await jsRuntime.InvokeAsync<bool>("confirm", "Are you sure, you want to delete this record?");
+        if (confirmed)
+        {
+            var response = await http.DeleteAsync($"api/students/{student.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                students.Remove(student);
+            }
+            else
+            {
+
+            }
+        }
+    }
+}

@@ -1,0 +1,48 @@
+﻿@page "/students/edit/{StudentId:int}"
+@inject HttpClient http
+@inject NavigationManager manager
+@using System.Text.Json
+
+<h3>Edit Student</h3>
+
+@if (student == null)
+{
+    <text>Loading....</text>
+}
+else
+{
+    <StudentsForm student="student" OnValidSubmit="OnValidSubmit"></StudentsForm>
+}
+@code {
+    [Parameter]
+    public int StudentId { get; set; }
+    private Student student;
+    protected async override Task OnInitializedAsync()
+    {
+        var response = await http.GetAsync($"api/students/{StudentId}");
+        if (response.IsSuccessStatusCode)
+        {
+            student = JsonSerializer.Deserialize<Student>(await response.Content.ReadAsStringAsync(), new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+        }
+        else
+        {
+            manager.NavigateTo("students");
+        }
+    }
+
+    private async Task OnValidSubmit()
+    {
+        var response = await http.PutAsJsonAsync("api/students", student);
+        if (response.IsSuccessStatusCode)
+        {
+            manager.NavigateTo("students");
+        }
+        else
+        {
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+        }
+    }
+}
